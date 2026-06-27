@@ -1,0 +1,21 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
+
+# Per-paper scratch output (the skill writes here)
+work/
+**/work/
+
+# Packaged skill bundles
+*.skill
+
+# Local project instructions (not part of the published skill)
+CLAUDE.md

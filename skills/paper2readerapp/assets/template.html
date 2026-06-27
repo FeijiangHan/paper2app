@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__ — interactive reader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['$','$'],['\\(','\\)']],
+    displayMath: [['$$','$$'],['\\[','\\]']],
+    macros: { /*MACROS*/ },
+    processEscapes: true
+  },
+  options: { ignoreHtmlClass: 'no-math' },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" id="MathJax-script"></script>
+<style>
+:root{
+  --paper:#fcfbf9; --ink:#1b1f24; --muted:#5c6671; --rule:#d8dde2;
+  --link:#1a3a8f; --linkbg:#eef2fb;
+  --pink:#ff2f86; --pink-soft:rgba(255,86,158,0.26); --pink-strong:rgba(255,33,120,0.46);
+  --pink-edge:#ff8ec0;
+  --note-bg:#fff6fb; --note-edge:#ffc9e2;
+  --teal:#0f8a62; --teal-bg:#ecf9f3; --teal-edge:#b6e3d2; --teal-ink:#0d3a2b;
+  --serif:"Palatino Linotype","Book Antiqua",Palatino,"URW Palladio L","TeX Gyre Pagella","P052",Georgia,"Times New Roman",serif;
+  --mono:"Inconsolata",ui-monospace,Menlo,Consolas,monospace;
+  /*FONTVARS*/
+  --maxw:720px; --gutter:300px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:#ecebe7; color:var(--ink);
+  font-family:var(--serif); font-size:18px; line-height:1.62;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+/* ---------- page frame ---------- */
+.sheet{
+  max-width:calc(var(--maxw) + var(--gutter) + 120px);
+  margin:0 auto; padding:56px 60px 160px;
+  background:var(--paper);
+  min-height:100vh; position:relative;
+  box-shadow:0 0 0 1px #e3e1db, 0 18px 60px rgba(40,40,46,.12);
+}
+.col{ max-width:var(--maxw); }
+article{ position:relative; }
+/* gutter for sidenotes on wide screens */
+@media(min-width:1180px){
+  .sheet{ padding-right:calc(var(--gutter) + 60px); }
+}
+/* ---------- typography ---------- */
+h1.title{ font-size:30px; line-height:1.18; font-weight:700; margin:.2em 0 .35em; letter-spacing:.1px;}
+.byline{ font-size:17px; color:var(--ink); margin:0 0 2px;}
+.affil{ font-size:14.5px; color:var(--muted); margin:0 0 22px;}
+.affil code{ color:var(--muted);}
+h2{ font-size:20.5px; font-weight:700; margin:1.9em 0 .5em; line-height:1.25;}
+h3{ font-size:17.5px; font-weight:700; margin:1.4em 0 .35em;}
+.runhead{ font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--rule); padding-bottom:8px; margin-bottom:26px; display:flex; justify-content:space-between;}
+p{ margin:0 0 .85em; text-align:justify; hyphens:auto;}
+p.noindent{}
+.lead-num{ color:var(--muted); font-variant-numeric:tabular-nums;}
+code{ font-family:var(--mono); font-size:.86em; background:#f0efe9; padding:.04em .28em; border-radius:3px; color:#2a2f36; word-break:break-word;}
+.abstract{ font-size:16.5px; line-height:1.6; background:#f6f4ef; border:1px solid #e7e3da; border-radius:8px; padding:18px 22px; margin:8px 0 6px;}
+.abstract h4{ margin:0 0 .4em; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); font-weight:700;}
+.abstract p{ text-align:justify;}
+ol.contrib{ margin:.3em 0 1em; padding-left:1.3em;}
+ol.contrib li{ margin:.35em 0;}
+ul.tight{ margin:.3em 0 1em; padding-left:1.25em;}
+ul.tight li{ margin:.3em 0;}
+.footnote{ font-size:14px; color:var(--muted); border-left:3px solid var(--rule); padding:2px 0 2px 14px; margin:.5em 0 1.1em;}
+.footnote b{ color:var(--ink);}
+.prompt-lab{ font-size:13px; font-weight:700; color:var(--muted); margin:.9em 0 .25em; letter-spacing:.02em;}
+pre.no-math{ font-family:var(--mono); font-size:12.5px; line-height:1.46; background:#f6f5f0; border:1px solid #e6e3da; border-radius:6px; padding:12px 14px; overflow-x:auto; white-space:pre; color:#33373d; text-align:left;}
+hr{ }
+/* ---------- figures ---------- */
+figure{ margin:1.7em 0 1.6em; text-align:center;}
+figure img{ max-width:100%; height:auto; border:1px solid #e7e4dc; border-radius:6px; background:#fff; box-shadow:0 2px 10px rgba(40,40,46,.06);}
+figure.wide img{ width:100%;}
+figcaption{ font-size:14.5px; line-height:1.5; color:#3a4048; text-align:left; margin-top:10px; padding:0 4px;}
+figcaption .lab{ font-weight:700; color:var(--ink);}
+/* algorithm */
+.algo{ border:1px solid var(--rule); border-radius:6px; background:#fbfaf7; padding:14px 16px 16px; margin:1.6em 0; font-size:15px;}
+.algo .alab{ font-weight:700; border-bottom:1px solid var(--rule); padding-bottom:6px; margin-bottom:8px;}
+.algo ol{ margin:0; padding-left:30px; counter-reset:none;}
+.algo li{ margin:1px 0; line-height:1.45;}
+.algo .kw{ font-weight:700;}
+.algo .req{ color:var(--muted); font-style:italic;}
+.algo code, .algo .mono{ font-family:var(--mono); font-size:.85em;}
+/* ---------- citations ---------- */
+cite{ font-style:normal; }
+.cite-item{ color:var(--link); cursor:pointer; border-radius:3px; padding:0 1px; transition:background .12s;}
+.cite-item:hover{ background:var(--linkbg); text-decoration:underline;}
+.cite-item:focus-visible{ outline:2px solid var(--pink-edge); outline-offset:1px;}
+a.xref{ color:var(--link); cursor:pointer; text-decoration:none; border-bottom:1px dotted #9aa6c8;}
+a.xref:hover{ background:var(--linkbg);}
+/* ---------- highlights (pink highlighter) ---------- */
+mark.hl{
+  background:var(--pink-soft);
+  color:inherit; cursor:pointer;
+  padding:.06em .02em; border-radius:2px;
+  box-decoration-break:clone; -webkit-box-decoration-break:clone;
+  transition:background .15s, box-shadow .15s;
+  text-decoration-color:transparent;
+}
+mark.hl:hover{ background:var(--pink-strong);}
+mark.hl.active{
+  background:var(--pink-strong);
+  box-shadow:0 0 0 2px var(--pink-edge), 0 2px 10px rgba(255,47,134,.28);
+}
+/* ---------- sidenote (desktop gutter) ---------- */
+#note{
+  position:absolute; width:var(--gutter); right:calc(-1 * var(--gutter) - 30px); top:0;
+  background:var(--note-bg); border:1px solid var(--note-edge); border-left:4px solid var(--pink);
+  border-radius:8px; padding:14px 16px 16px; font-size:14.5px; line-height:1.5;
+  box-shadow:0 6px 22px rgba(255,47,134,.13); display:none; z-index:30;
+}
+#note .nt-step{ font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--pink); font-weight:700; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;}
+#note .nt-title{ font-weight:700; font-size:15.5px; margin-bottom:5px; line-height:1.3; color:#3a1226;}
+#note .nt-body{ color:#33373d;}
+#note .nt-sec{ margin-top:9px; font-size:12.5px; color:var(--muted); font-style:italic;}
+#note .nt-close{ cursor:pointer; color:var(--muted); font-style:normal; border:none; background:none; font-size:15px; line-height:1;}
+/* mobile note: bottom sheet */
+@media(max-width:1179px){
+  #note{
+    position:fixed; right:0; left:0; bottom:64px; top:auto; width:auto; margin:0 10px;
+    max-height:46vh; overflow:auto; border-left:1px solid var(--note-edge); border-bottom:4px solid var(--pink);
+  }
+}
+/* ---------- section/subsection summary (teal) ---------- */
+h2.has-summary, h3.has-summary{ position:relative; cursor:pointer; transition:color .12s;}
+h2.has-summary:hover, h3.has-summary:hover{ color:var(--teal);}
+h2.has-summary::after, h3.has-summary::after{
+  content:"summary"; position:absolute; right:0; top:50%; transform:translateY(-50%);
+  font-size:10px; letter-spacing:.13em; text-transform:uppercase; font-weight:700;
+  color:var(--teal); background:var(--teal-bg); border:1px solid var(--teal-edge);
+  border-radius:11px; padding:1px 9px; opacity:0; transition:opacity .15s; pointer-events:none; white-space:nowrap;
+}
+h2.has-summary:hover::after, h3.has-summary:hover::after{ opacity:1;}
+#snote{
+  position:absolute; width:var(--gutter); right:calc(-1 * var(--gutter) - 30px); top:0;
+  background:var(--teal-bg); border:1px solid var(--teal-edge); border-left:4px solid var(--teal);
+  border-radius:8px; padding:14px 16px 15px; font-size:14.5px; line-height:1.5;
+  box-shadow:0 6px 22px rgba(15,138,98,.15); display:none; z-index:31;
+}
+#snote .sn-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;}
+#snote .sn-lab{ font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--teal); font-weight:700;}
+#snote .sn-x{ cursor:pointer; border:none; background:none; color:var(--muted); font-size:15px; line-height:1;}
+#snote .sn-title{ font-weight:700; font-size:15.5px; margin-bottom:7px; color:var(--teal-ink); line-height:1.3;}
+#snote ul{ margin:0; padding-left:1.15em;}
+#snote li{ margin:.4em 0; color:#264a3d;}
+@media(max-width:1179px){
+  #snote{ position:fixed; right:0; left:0; bottom:64px; top:auto; width:auto; margin:0 10px;
+    max-height:48vh; overflow:auto; border-left:1px solid var(--teal-edge); border-bottom:4px solid var(--teal);}
+}
+/* ---------- citation popover (in-context, non-dimming) ---------- */
+#cite-pop{ position:fixed; z-index:80; display:none; max-width:380px; width:max-content;
+  background:#fffdfa; border:1px solid #e4ddd0; border-radius:10px;
+  box-shadow:0 10px 34px rgba(20,18,24,.26); padding:13px 16px 14px; font-size:14.5px; line-height:1.5;}
+#cite-pop .pop-lab{ font-size:10.5px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); font-weight:700; margin-bottom:5px; padding-right:16px;}
+#cite-pop .pop-x{ position:absolute; top:7px; right:9px; border:none; background:none; cursor:pointer; color:#9a958c; font-size:13px; line-height:1;}
+#cite-pop .pop-body{ }
+#cite-pop .r-au{ font-weight:700;}
+#cite-pop .reflink{ display:inline-block; margin-top:7px; font-size:12.5px; color:var(--link); text-decoration:none; font-family:var(--mono); word-break:break-all;}
+#cite-pop .reflink:hover{ text-decoration:underline;}
+#cite-pop::after{ content:""; position:absolute; width:11px; height:11px; background:#fffdfa; border-left:1px solid #e4ddd0; border-top:1px solid #e4ddd0; transform:rotate(45deg);}
+#cite-pop.below::after{ top:-6px; }
+#cite-pop.above::after{ bottom:-6px; border-left:none; border-top:none; border-right:1px solid #e4ddd0; border-bottom:1px solid #e4ddd0;}
+/* ---------- references section ---------- */
+#references ol{ padding-left:0; list-style:none; counter-reset:r;}
+#references li{ font-size:14.5px; line-height:1.5; margin:0 0 .7em; padding-left:26px; text-indent:-26px;}
+#references li.target{ background:var(--linkbg); border-radius:4px;}
+#references .r-au{ font-weight:700;}
+/* ---------- bottom navbar (audio player) ---------- */
+#bar{
+  position:fixed; left:0; right:0; bottom:0; z-index:60;
+  background:rgba(250,249,246,.94); backdrop-filter:saturate(1.3) blur(8px);
+  border-top:1px solid #dcdad3; box-shadow:0 -4px 20px rgba(0,0,0,.07);
+  display:flex; align-items:center; gap:14px; padding:9px 18px;
+  font-family:var(--serif);
+}
+#bar .controls{ display:flex; gap:6px; align-items:center;}
+#bar button.ctl{
+  border:1px solid #d4d1c9; background:#fff; color:#2a2f36; cursor:pointer;
+  width:40px; height:38px; border-radius:9px; font-size:15px; display:flex; align-items:center; justify-content:center;
+  transition:background .12s, transform .05s;
+}
+#bar button.ctl:hover{ background:#fdeef5; border-color:var(--pink-edge);}
+#bar button.ctl:active{ transform:translateY(1px);}
+#bar button.ctl.primary{ background:var(--pink); border-color:var(--pink); color:#fff; width:46px;}
+#bar button.ctl.primary:hover{ background:#ff157a;}
+#bar .back-sep{ width:1px; height:26px; background:#dcd9d1; margin:0 6px; flex:0 0 auto;}
+#bar button.ctl.back{ flex:0 0 auto;}
+#bar button.ctl.back svg{ width:18px; height:18px;}
+#bar button.ctl:disabled{ opacity:.3; cursor:default; }
+#bar button.ctl:disabled:hover{ background:#fff; border-color:#d4d1c9;}
+#bar button.ctl.back:not(:disabled){ border-color:var(--teal-edge); color:var(--teal);}
+#bar button.ctl.back:not(:disabled):hover{ background:var(--teal-bg);}
+#bar .ctl svg{ width:16px; height:16px; fill:currentColor;}
+#bar .meta{ font-size:12.5px; color:var(--muted); min-width:96px; font-variant-numeric:tabular-nums;}
+#bar .meta b{ color:var(--ink); font-size:13px;}
+#bar .track-wrap{ flex:1; display:flex; flex-direction:column; gap:3px; min-width:120px;}
+#bar .track{ position:relative; height:16px; display:flex; align-items:center; cursor:pointer;}
+#bar .rail{ position:absolute; left:0; right:0; height:5px; background:#e4e1d9; border-radius:4px;}
+#bar .fill{ position:absolute; left:0; height:5px; background:linear-gradient(90deg,#ff7ab3,var(--pink)); border-radius:4px; width:0;}
+#bar .knob{ position:absolute; width:14px; height:14px; border-radius:50%; background:#fff; border:2px solid var(--pink); box-shadow:0 1px 4px rgba(255,47,134,.5); transform:translateX(-50%); left:0; transition:left .35s cubic-bezier(.4,.1,.2,1);}
+#bar .fill{ transition:width .35s cubic-bezier(.4,.1,.2,1);}
+#bar .tick{ position:absolute; width:2px; height:9px; background:#c9c5bb; top:50%; transform:translate(-50%,-50%); border-radius:2px;}
+#bar .tick.done{ background:var(--pink-edge);}
+#bar .tick.cur{ background:var(--pink); height:13px; width:3px;}
+#bar .label{ font-size:11px; color:var(--muted); display:flex; justify-content:space-between;}
+#bar .title-now{ color:#3a1226; font-weight:700; max-width:60%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.hintbar{ font-size:12px; color:var(--muted);}
+/* ---------- top navbar (slides in once the title scrolls away) ---------- */
+#topbar{ position:fixed; top:0; left:0; right:0; z-index:58;
+  background:rgba(252,251,249,.96); backdrop-filter:saturate(1.4) blur(8px);
+  border-bottom:1px solid #e3e1db; box-shadow:0 2px 14px rgba(40,40,46,.06);
+  transform:translateY(-105%); transition:transform .28s cubic-bezier(.4,.1,.2,1);}
+#topbar.show{ transform:translateY(0);}
+#topbar .tb-inner{ max-width:calc(var(--maxw) + var(--gutter) + 120px); margin:0 auto;
+  display:flex; align-items:center; gap:18px; padding:8px 60px;}
+#topbar .tb-text{ min-width:0; flex:1 1 auto;}
+#topbar .tb-title{ display:block; font-family:var(--serif); font-weight:700; font-size:15px;
+  line-height:1.2; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+#topbar .tb-auth{ display:block; font-family:var(--serif); font-size:12.5px; color:var(--muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px;}
+#topbar .tb-right{ flex:0 0 auto;}
+a.nav-arxiv{ font-family:var(--mono); font-size:12.5px; color:var(--link); text-decoration:none;
+  background:var(--linkbg); border:1px solid #dbe3f5; padding:3px 10px; border-radius:7px; white-space:nowrap;}
+a.nav-arxiv:hover{ text-decoration:underline; background:#e4ecfb;}
+@media(max-width:720px){ #topbar .tb-inner{ padding:7px 16px;} #topbar .tb-title{ font-size:13.5px;} #topbar .tb-auth{ display:none;} }
+/* ---------- built-with credit ---------- */
+.p2r-credit{ margin:46px auto 0; padding-top:18px; border-top:1px solid var(--rule);
+  text-align:center; font-size:12.5px; color:var(--muted);}
+.p2r-credit a{ color:var(--link); text-decoration:none; font-weight:600;}
+.p2r-credit a:hover{ text-decoration:underline;}
+@media(max-width:720px){
+  body{font-size:16.5px;}
+  .sheet{ padding:26px 18px 150px;}
+  #bar .meta{ display:none;}
+  #bar{ gap:8px; padding:8px 10px;}
+  #bar button.ctl{ width:36px; height:34px;}
+}
+</style>
+</head>
+<body>
+<header id="topbar" aria-label="paper">
+  <div class="tb-inner">
+    <div class="tb-text">
+      <span class="tb-title">__TITLE__</span>
+      <span class="tb-auth">__NAV_AUTHORS__</span>
+    </div>
+    <div class="tb-right">__ARXIV_HTML__</div>
+  </div>
+</header>
+<div class="sheet">
+  <div class="runhead col"><span>__VENUE__ &nbsp;·&nbsp; interactive reader</span><span>__RUNAUTH__</span></div>
+  <article class="col mathjax" id="paper">
+  <!--BODY-->
+  </article>
+  <footer class="col p2r-credit">Built with <a href="https://github.com/delip/paper2readerapp" target="_blank" rel="noopener">paper2readerapp</a></footer>
+  <div id="note" role="dialog" aria-label="highlight explanation">
+    <div class="nt-step"><span id="nt-step-l">Highlight</span><button class="nt-close" id="nt-x" aria-label="close">✕</button></div>
+    <div class="nt-title" id="nt-title"></div>
+    <div class="nt-body" id="nt-body"></div>
+    <div class="nt-sec" id="nt-sec"></div>
+  </div>
+  <div id="snote" role="dialog" aria-label="section summary">
+    <div class="sn-head"><span class="sn-lab">Section summary</span><button class="sn-x" id="sn-x" aria-label="close">✕</button></div>
+    <div class="sn-title" id="sn-title"></div>
+    <ul class="sn-list" id="sn-list"></ul>
+  </div>
+</div>
+
+<!-- citation popover (in-context, does not dim the page) -->
+<div id="cite-pop" role="dialog" aria-label="reference"></div>
+
+<!-- bottom navbar -->
+<nav id="bar">
+  <div class="controls">
+    <button class="ctl" id="b-reset" title="Reset to first highlight (Home)" aria-label="Reset">
+      <svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM20 6l-9 6 9 6z"/></svg>
+    </button>
+    <button class="ctl" id="b-prev" title="Previous highlight (←)" aria-label="Previous">
+      <svg viewBox="0 0 24 24"><path d="M16 6l-9 6 9 6zM8 6h2v12H8z" opacity=".25"/><path d="M17 6l-9 6 9 6z"/></svg>
+    </button>
+    <button class="ctl primary" id="b-next" title="Next highlight (→ or Space)" aria-label="Next">
+      <svg viewBox="0 0 24 24"><path d="M7 6l9 6-9 6z"/></svg>
+    </button>
+  </div>
+  <div class="meta"><b id="m-step">0</b> / <span id="m-total">0</span><br><span id="m-of">tour stop</span></div>
+  <div class="track-wrap">
+    <div class="track" id="track">
+      <div class="rail"></div>
+      <div class="fill" id="fill"></div>
+      <div id="ticks"></div>
+      <div class="knob" id="knob"></div>
+    </div>
+    <div class="label"><span class="title-now" id="title-now">Press ▶ or Next to begin the guided tour</span><span id="pct">start of paper</span></div>
+  </div>
+  <div class="back-sep"></div>
+  <button class="ctl back" id="b-back" title="Back to where you jumped from" aria-label="Back to previous location" disabled>
+    <svg viewBox="0 0 24 24"><path d="M12 5V1L6 6l6 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+  </button>
+</nav>
+
+<script>
+const REFS = /*REFS*/;
+const REF_ORDER = /*ORDER*/;
+const FIGS = /*FIGS*/;
+const SUMMARIES = /*SUMMARIES*/;
+</script>
+<script>
+/* ============ assets ============ */
+function escapeHtml(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+// figures
+document.querySelectorAll('img[data-fig]').forEach(img=>{
+  const k=img.getAttribute('data-fig'); if(FIGS[k]){ img.src=FIGS[k]; }
+});
+// inline citation labels — each key is its OWN clickable link
+function citeLabel(key){
+  const r=REFS[key]; if(!r) return key;
+  return r.short+', '+r.year;
+}
+function citeItem(key,labelText){
+  return '<a class="cite-item" role="button" tabindex="0" data-ck="'+escapeHtml(key)+'">'+escapeHtml(labelText)+'</a>';
+}
+document.querySelectorAll('cite[data-k]').forEach(c=>{
+  const keys=c.getAttribute('data-k').split(',').map(s=>s.trim());
+  const textual = c.getAttribute('data-p')==='t';
+  let html;
+  if(textual){
+    const r=REFS[keys[0]];
+    html=citeItem(keys[0], (r?r.short:keys[0]))+' ('+(r?r.year:'')+')';
+    // any additional keys still individually clickable
+    for(let i=1;i<keys.length;i++){ html+='; '+citeItem(keys[i], citeLabel(keys[i])); }
+  }else{
+    html='('+keys.map(k=>citeItem(k, citeLabel(k))).join('; ')+')';
+  }
+  c.innerHTML=html;
+});
+// references section
+(function buildRefs(){
+  const host=document.getElementById('ref-list'); if(!host) return;
+  let html='<ol>';
+  REF_ORDER.forEach(k=>{
+    html+='<li id="ref-'+k+'">'+REFS[k].full+(REFS[k].url?' <a class="reflink" href="'+escapeHtml(REFS[k].url)+'" target="_blank" rel="noopener">'+escapeHtml(REFS[k].url)+'</a>':'')+'</li>';
+  });
+  html+='</ol>';
+  host.innerHTML=html;
+})();
+
+/* ============ citation popover (in-context, non-dimming) ============ */
+const pop=document.getElementById('cite-pop');
+let popOpen=false;
+function openCitePop(key, anchor){
+  const r=REFS[key];
+  if(!r){ return; }
+  pop.innerHTML='<button class="pop-x" aria-label="close">✕</button>'+
+    '<div class="pop-lab">Reference</div>'+
+    '<div class="pop-body">'+r.full+
+    (r.url?'<br><a class="reflink" href="'+escapeHtml(r.url)+'" target="_blank" rel="noopener">'+escapeHtml(r.url)+'</a>':'')+
+    '</div>';
+  pop.classList.remove('above','below');
+  pop.style.display='block';
+  pop.style.visibility='hidden';
+  // measure then position relative to the clicked citation
+  const ar=anchor.getBoundingClientRect();
+  const pw=pop.offsetWidth, ph=pop.offsetHeight;
+  const vw=window.innerWidth, vh=window.innerHeight, M=12;
+  let left=ar.left;
+  if(left+pw>vw-M) left=vw-pw-M;
+  if(left<M) left=M;
+  let top, place;
+  if(ar.bottom+10+ph <= vh-M || ar.bottom < vh*0.55){ top=ar.bottom+10; place='below'; }
+  else { top=ar.top-ph-10; place='above'; }
+  if(top<M) top=M;
+  pop.style.left=left+'px'; pop.style.top=top+'px';
+  pop.classList.add(place);
+  // caret horizontally near the anchor
+  const caretX=Math.max(14, Math.min(pw-14, (ar.left+ar.width/2)-left));
+  pop.style.setProperty('--caret', caretX+'px');
+  pop.querySelector('.pop-x').onclick=closeCitePop;
+  pop.style.visibility='visible';
+  popOpen=true;
+}
+function closeCitePop(){ pop.style.display='none'; popOpen=false; }
+// caret horizontal position
+const caretStyle=document.createElement('style');
+caretStyle.textContent='#cite-pop::after{left:var(--caret,18px);}';
+document.head.appendChild(caretStyle);
+// open a citation popover when its individual link is clicked; close on outside click
+document.addEventListener('click',e=>{
+  const item=e.target.closest('.cite-item');
+  if(item){ e.stopPropagation(); openCitePop(item.getAttribute('data-ck'), item); return; }
+  if(popOpen && !e.target.closest('#cite-pop')){ closeCitePop(); }
+});
+window.addEventListener('scroll',()=>{ if(popOpen) closeCitePop(); }, {passive:true});
+window.addEventListener('resize',()=>{ if(popOpen) closeCitePop(); });
+// xref (figure/section internal links) — remember where we jumped FROM so Back can return
+const jumpStack=[];
+const backBtn=document.getElementById('b-back');
+function updateBack(){ backBtn.disabled = jumpStack.length===0; backBtn.title = jumpStack.length? ('Back to where you jumped from'+(jumpStack.length>1?' ('+jumpStack.length+')':'')) : 'No jump to go back to'; }
+function goBack(){
+  if(!jumpStack.length) return;
+  const y=jumpStack.pop();
+  try{ window.scrollTo({top:y,behavior:'smooth'}); }catch(e){ window.scrollTo(0,y); }
+  updateBack();
+}
+backBtn.addEventListener('click',goBack);
+updateBack();
+document.addEventListener('click',e=>{
+  const x=e.target.closest('a.xref'); if(!x) return;
+  const id=x.getAttribute('data-ref'); const el=document.getElementById(id);
+  if(el){
+    e.preventDefault();
+    jumpStack.push(window.scrollY);            // record origin for Back
+    if(jumpStack.length>50) jumpStack.shift();
+    updateBack();
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    el.style.transition='background .2s'; el.style.background='#fff3c4';
+    setTimeout(()=>el.style.background='',1200);
+  }
+});
+
+/* ============ highlights + tour ============ */
+const marks=[...document.querySelectorAll('mark.hl')];
+// tour order from data-tour
+const tour=marks.filter(m=>m.dataset.tour).sort((a,b)=>(+a.dataset.tour)-(+b.dataset.tour));
+const article=document.getElementById('paper');
+const note=document.getElementById('note');
+let idx=-1;
+
+function docPos(el){
+  const r=el.getBoundingClientRect();
+  const top=r.top+window.scrollY+r.height/2;
+  const H=document.documentElement.scrollHeight-window.innerHeight;
+  return Math.max(0,Math.min(1, (r.top+window.scrollY - window.innerHeight*0.32) / Math.max(1,document.documentElement.scrollHeight - window.innerHeight) ));
+}
+function buildTicks(){
+  const ticks=document.getElementById('ticks');
+  ticks.innerHTML='';
+  tour.forEach((m,i)=>{
+    const t=document.createElement('div'); t.className='tick'; t.dataset.i=i;
+    t.style.left=(docPos(m)*100)+'%';
+    t.title=(i+1)+'. '+(m.dataset.title||'');
+    t.onclick=ev=>{ ev.stopPropagation(); goto(i); };
+    ticks.appendChild(t);
+  });
+}
+function showNote(m,i){
+  document.getElementById('snote').style.display='none';   // mutually exclusive with section summary
+  document.getElementById('nt-step-l').textContent='Stop '+(i+1)+' of '+tour.length;
+  document.getElementById('nt-title').textContent=m.dataset.title||'';
+  document.getElementById('nt-body').textContent=m.dataset.note||'';
+  const sec=m.dataset.sec; const se=document.getElementById('nt-sec');
+  if(sec){ se.textContent='“'+ (m.textContent.length>60?m.textContent.slice(0,60)+'…':m.textContent) +'” · '+sec; se.style.display='block'; }
+  else se.style.display='none';
+  // position (desktop gutter)
+  if(window.innerWidth>=1180){
+    const sheet=document.querySelector('.sheet');
+    const sr=sheet.getBoundingClientRect();
+    const ar=article.getBoundingClientRect();
+    const mr=m.getBoundingClientRect();
+    note.style.position='absolute';
+    note.style.top=Math.max(0,(mr.top - sr.top))+'px';
+    note.style.left=(ar.right - sr.left + 24)+'px';
+    note.style.right='auto'; note.style.bottom='auto'; note.style.width='var(--gutter)';
+  } else {
+    note.style.position=''; note.style.top=''; note.style.left=''; note.style.right=''; note.style.width='';
+  }
+  note.style.display='block';
+}
+function setActive(m){
+  marks.forEach(x=>x.classList.remove('active'));
+  if(m) m.classList.add('active');
+}
+function updateBar(i){
+  const m=tour[i];
+  document.getElementById('m-step').textContent=i+1;
+  document.getElementById('fill').style.width=(i>=0?docPos(m)*100:0)+'%';
+  document.getElementById('knob').style.left=(i>=0?docPos(m)*100:0)+'%';
+  document.getElementById('title-now').textContent=m?((i+1)+'. '+(m.dataset.title||'')):'Press Next to begin';
+  document.getElementById('pct').textContent=m?(Math.round(docPos(m)*100)+'% into paper'):'start';
+  [...document.querySelectorAll('.tick')].forEach((t,ti)=>{
+    t.classList.toggle('done',ti<i); t.classList.toggle('cur',ti===i);
+  });
+}
+function goto(i){
+  if(i<0||i>=tour.length) return;
+  hideSummary();
+  idx=i; const m=tour[i];
+  setActive(m); updateBar(i);
+  try{
+    const y=m.getBoundingClientRect().top+window.scrollY - window.innerHeight*0.34;
+    window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+  }catch(e){ try{ m.scrollIntoView({block:'center'}); }catch(_){} }
+  setTimeout(()=>{ showNote(m,i); updateBar(i); }, 240);
+}
+function next(){ goto(idx>=tour.length-1?tour.length-1:idx+1); }
+function prev(){ goto(idx<=0?0:idx-1); }
+function reset(){ goto(0); }
+// click any highlight
+document.addEventListener('click',e=>{
+  const m=e.target.closest('mark.hl'); if(!m) return;
+  if(e.target.closest('cite')) return;
+  const ti=tour.indexOf(m);
+  if(ti>=0){ goto(ti); }
+  else { setActive(m); showNote(m,0); }
+});
+document.getElementById('nt-x').onclick=()=>{ note.style.display='none'; setActive(null); };
+
+// ----- section / subsection summaries (teal note) -----
+const snote=document.getElementById('snote');
+function hideSummary(){ snote.style.display='none'; }
+function showSummary(h){
+  const s=SUMMARIES[h.id]; if(!s) return;
+  note.style.display='none'; setActive(null);   // keep the two notes mutually exclusive
+  document.getElementById('sn-title').textContent=s.t||h.textContent.replace(/\s+/g,' ').trim();
+  const ul=document.getElementById('sn-list'); ul.innerHTML='';
+  (s.b||[]).forEach(t=>{ const li=document.createElement('li'); li.textContent=t; ul.appendChild(li); });
+  if(window.innerWidth>=1180){
+    const sheet=document.querySelector('.sheet');
+    const sr=sheet.getBoundingClientRect(), ar=article.getBoundingClientRect(), hr=h.getBoundingClientRect();
+    snote.style.position='absolute';
+    snote.style.top=Math.max(0,(hr.top-sr.top))+'px';
+    snote.style.left=(ar.right-sr.left+24)+'px';
+    snote.style.right='auto'; snote.style.bottom='auto'; snote.style.width='var(--gutter)';
+  } else { snote.style.position=''; snote.style.top=''; snote.style.left=''; snote.style.right=''; snote.style.width=''; }
+  snote.style.display='block';
+}
+document.querySelectorAll('#paper h2[id], #paper h3[id]').forEach(h=>{
+  if(SUMMARIES[h.id]){
+    h.classList.add('has-summary');
+    h.setAttribute('title','Click for a bullet summary of this section');
+    h.setAttribute('role','button'); h.tabIndex=0;
+    h.addEventListener('click',()=>showSummary(h));
+    h.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); showSummary(h); } });
+  }
+});
+document.getElementById('sn-x').onclick=hideSummary;
+
+document.getElementById('b-next').onclick=next;
+document.getElementById('b-prev').onclick=prev;
+document.getElementById('b-reset').onclick=reset;
+// track seek -> nearest tick
+document.getElementById('track').addEventListener('click',e=>{
+  const rect=e.currentTarget.getBoundingClientRect();
+  const f=(e.clientX-rect.left)/rect.width;
+  let best=0,bd=9; tour.forEach((m,i)=>{const d=Math.abs(docPos(m)-f); if(d<bd){bd=d;best=i;}});
+  goto(best);
+});
+// keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ if(popOpen){ closeCitePop(); return; } note.style.display='none'; setActive(null); hideSummary(); return; }
+  const it=e.target && e.target.closest && e.target.closest('.cite-item');
+  if(it && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); openCitePop(it.getAttribute('data-ck'), it); return; }
+  const interactive = e.target && e.target.closest && e.target.closest('a,button,input,textarea,select');
+  if(e.key==='ArrowRight'){ e.preventDefault(); next(); }
+  else if(e.key===' '){ if(interactive) return; e.preventDefault(); next(); }
+  else if(e.key==='ArrowLeft'){ e.preventDefault(); prev(); }
+  else if(e.key==='Home'){ e.preventDefault(); reset(); }
+});
+// recompute tick/bar positions after load + resize (images/math change layout)
+function relayout(){ buildTicks(); if(idx>=0){ updateBar(idx); showNote(tour[idx],idx);} }
+let rT;
+window.addEventListener('resize',()=>{ hideSummary(); clearTimeout(rT); rT=setTimeout(relayout,150); });
+document.getElementById('m-total').textContent=tour.length;
+
+// top navbar: reveal once the paper's title has scrolled out of view
+(function(){
+  const tb=document.getElementById('topbar');
+  const titleEl=document.querySelector('h1.title')||document.querySelector('.runhead');
+  if(!tb||!titleEl) return;
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver(es=>{
+      es.forEach(e=>{ tb.classList.toggle('show', !e.isIntersecting && e.boundingClientRect.top<0); });
+    },{threshold:0, rootMargin:'-6px 0px 0px 0px'});
+    io.observe(titleEl);
+  } else {
+    window.addEventListener('scroll',()=>{ tb.classList.toggle('show', titleEl.getBoundingClientRect().bottom<0); },{passive:true});
+  }
+})();
+
+// init after MathJax + images settle
+function init(){
+  buildTicks(); updateBar(-1);
+}
+window.addEventListener('load',()=>{
+  setTimeout(init,200);
+  if(window.MathJax&&MathJax.startup&&MathJax.startup.promise){
+    MathJax.startup.promise.then(()=>setTimeout(relayout,200));
+  }
+  // images load -> relayout
+  let imgs=document.querySelectorAll('img'); let n=imgs.length;
+  imgs.forEach(im=>{ if(im.complete) chk(); else im.addEventListener('load',chk); });
+  function chk(){ n--; if(n<=0) setTimeout(relayout,150); }
+});
+</script>
+</body>
+</html>
