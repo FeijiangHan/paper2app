@@ -1,0 +1,19 @@
+{
+  "name": "paper2readerapp",
+  "owner": { "name": "delip", "url": "https://github.com/delip" },
+  "metadata": {
+    "description": "Turn any research paper (PDF, LaTeX+bib, or arXiv id/URL) into a single-page interactive reader app.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "paper2readerapp",
+      "source": "./",
+      "description": "Convert a paper into a self-contained interactive HTML reader: single-column render, never-cropped figures and tables, a pink-highlighter guided tour with margin sidenotes, clickable section summaries, citation popovers with full references, an audio-player navbar (Reset/Prev/Next/Back + progress), and MathJax.",
+      "version": "1.0.0",
+      "author": { "name": "delip", "url": "https://github.com/delip" },
+      "homepage": "https://github.com/delip/paper2readerapp",
+      "keywords": ["paper", "pdf", "arxiv", "latex", "reader", "interactive", "research", "highlights"]
+    }
+  ]
+}
